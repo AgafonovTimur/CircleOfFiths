@@ -1086,12 +1086,11 @@
     width:calc(100vw - 12px);
     justify-content:center;
   }
-  body.is-mobile #trainPianoSvg,
-  body.is-mobile #l3PianoSvg{
-    width:100%;
-    height:auto;
-    max-height:34vh;
-  }
+  /* Размеры самого SVG клавиатуры на мобильной раскладке задаёт JS
+     (layoutMobilePiano): масштаб фиксирован по «эталону» в 2 октавы,
+     поэтому клавиши всегда одного размера и верхний край клавиш всегда
+     на одном уровне, сколько бы октав ни рисовалось. Здесь размеры не
+     задаём, иначе они перебьют расчёт. */
   /* Круг поднимается на 20% высоты экрана, когда включён чекбокс
      "Показывать клавиатуру" — чтобы под ним освободилось место для
      клавиатуры. Класс mobile-piano-on вешается на <body> из JS
@@ -4700,6 +4699,71 @@ function updateTrainInversionButtons(){
   }
 }
 
+/* ===== МОБИЛЬНАЯ РАСКЛАДКА: размер и положение клавиатуры под кругом =====
+   Клавиатура рисуется на 1, 2 или больше октав — картинка от этого
+   меняется по ШИРИНЕ, а по высоте всегда одинаковая (зона стрелок +
+   клавиши). Если просто растягивать её по ширине экрана, то при смене
+   числа октав (например, при обращениях аккорда) масштаб скачет: клавиши
+   то крупнее, то мельче, и весь блок «прыгает» вверх-вниз.
+   Поэтому масштаб берётся ФИКСИРОВАННЫЙ — такой, при котором ровно 2
+   октавы занимают всю ширину экрана (baseScale). Тогда:
+     • 1 октава  — клавиши того же размера, картинка просто уже и стоит
+                   по центру;
+     • 2 октавы  — во всю ширину, как сейчас;
+     • 3+ октав  — в ширину экрана уже не влезают, масштаб уменьшается
+                   (scale < baseScale), клавиши становятся ниже. Чтобы
+                   при этом ВЕРХНИЙ край клавиш остался на прежнем
+                   уровне, блок опускается вниз ровно на то, на сколько
+                   «усохла» зона стрелок над клавишами — двигается только
+                   нижний край.
+   В альбомной ориентации масштаб дополнительно ограничен долей высоты
+   экрана (MOBILE_PIANO_MAX_H_VH), иначе клавиатура заняла бы весь экран. */
+const MOBILE_PIANO_SIDE_MARGIN = 12; // px, суммарный отступ клавиатуры от краёв экрана
+const MOBILE_PIANO_GAP = 12;         // px, зазор между низом круга и картинкой клавиатуры
+const MOBILE_PIANO_MAX_H_VH = 0.34;  // доля высоты экрана — потолок для высоты клавиатуры
+const MOBILE_PIANO_REF_BLOCKS = 2;   // эталон масштаба — клавиатура в 2 октавы
+
+function mobilePianoRefWidth(){
+  const layout = buildTrainPianoLayout(MOBILE_PIANO_REF_BLOCKS);
+  return TRAIN_PIANO_MARGIN_X*2 + layout.totalWhite*TRAIN_PIANO_WHITE_W;
+}
+
+function layoutMobilePiano(wrapEl, svgEl){
+  if(!wrapEl || !svgEl) return;
+  // isMobile объявлена ниже по файлу (let) — на самых ранних вызовах
+  // обращение к ней бросило бы ошибку и оборвало отрисовку клавиатуры,
+  // поэтому читаем её через try/catch. Итоговые размеры всё равно будут
+  // выставлены при следующем пересчёте (в конце скрипта и при resize).
+  let mob = false;
+  try{ mob = !!isMobile; }catch(e){ mob = false; }
+  if(!mob){
+    // на десктопе размеры берутся из атрибутов SVG, инлайновые — снимаем
+    svgEl.style.width = '';
+    svgEl.style.height = '';
+    wrapEl.style.marginTop = '';
+    return;
+  }
+  const vbW = parseFloat(svgEl.getAttribute('width'));
+  const vbH = parseFloat(svgEl.getAttribute('height'));
+  if(!vbW || !vbH) return;
+  const availW = Math.max(80, window.innerWidth - MOBILE_PIANO_SIDE_MARGIN);
+  const refH = TRAIN_PIANO_ARROW_ZONE_H + TRAIN_PIANO_WHITE_H;
+  const baseScale = Math.min(availW / mobilePianoRefWidth(), (window.innerHeight * MOBILE_PIANO_MAX_H_VH) / refH);
+  const scale = Math.min(baseScale, availW / vbW);
+  svgEl.style.width = (vbW * scale) + 'px';
+  svgEl.style.height = (vbH * scale) + 'px';
+  // компенсация «усохшей» зоны стрелок — держит верхний край клавиш на месте
+  wrapEl.style.marginTop = (MOBILE_PIANO_GAP + TRAIN_PIANO_ARROW_ZONE_H * (baseScale - scale)) + 'px';
+}
+
+// Пересчёт для обеих клавиатур сразу (поворот экрана, смена desktop/mobile).
+// try/catch — элементы "Аккордов/Ладов" объявлены ниже по файлу и на
+// самых ранних вызовах ещё недоступны.
+function updateMobilePianoGeometry(){
+  try{ layoutMobilePiano(trainPianoWrapEl, trainPianoSvgEl); }catch(e){}
+  try{ layoutMobilePiano(l3PianoWrapEl, l3PianoSvgEl); }catch(e){}
+}
+
 /* ===== МОБИЛЬНАЯ РАСКЛАДКА: круг вверх + клавиатура под ним =====
    Когда на текущей вкладке включён чекбокс "Показывать клавиатуру",
    на <body> вешается класс mobile-piano-on: круг поднимается на 20%
@@ -4740,6 +4804,7 @@ function updateTrainPiano(){
   if(trainShowInversions && !trainModeType) notes = buildTrainInversionNotes(notes);
   trainPianoWrapEl.style.display = 'flex';
   renderTrainPiano(notes);
+  layoutMobilePiano(trainPianoWrapEl, trainPianoSvgEl);
   updateTrainPianoOffset();
   updateTrainInversionButtons();
 }
@@ -5148,6 +5213,7 @@ function updateL3Piano(){
   }
   l3PianoWrapEl.style.display = 'flex';
   renderL3Piano(notes, l3FoundPcSet());
+  layoutMobilePiano(l3PianoWrapEl, l3PianoSvgEl);
   updateL3PianoOffset();
 }
 
@@ -10009,6 +10075,9 @@ window.addEventListener('resize', ()=>{
   // Класс "круг поднят + клавиатура под ним" зависит от мобильной
   // раскладки — пересчитываем при смене desktop/mobile и повороте.
   if(typeof updateMobilePianoLayout === 'function') updateMobilePianoLayout();
+  // Размер клавиатуры под кругом считается от размеров экрана — при
+  // повороте телефона пересчитываем.
+  if(typeof updateMobilePianoGeometry === 'function') updateMobilePianoGeometry();
 });
 
 // Клик/тап по затемнению фона — закрыть настройки (общее для десктопа
@@ -11680,6 +11749,7 @@ document.addEventListener('keydown', (e)=>{
 // (при более ранних вызовах updateMobilePianoLayout() они ещё в TDZ и
 // функция безопасно считает режим выключенным).
 updateMobilePianoLayout();
+updateMobilePianoGeometry();
 applyZoom();
 </script>
 <script>
