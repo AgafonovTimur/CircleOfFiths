@@ -4723,6 +4723,14 @@ function updateTrainInversionButtons(){
 const MOBILE_PIANO_SIDE_MARGIN = 12; // px, суммарный отступ клавиатуры от краёв экрана
 const MOBILE_PIANO_GAP = 12;         // px, зазор между низом круга и картинкой клавиатуры
 const MOBILE_PIANO_MAX_H_VH = 0.34;  // доля высоты экрана — потолок для высоты клавиатуры
+/* Круг с включённой клавиатурой поднят на 15% высоты экрана (см. CSS
+   .mobile-piano-on ... translateY(-15vh)). Клавиатура прибита к нижнему
+   краю круга и едет вместе с ним, поэтому на столько же она опустилась
+   бы относительно прежнего варианта с подъёмом 20%. Это число возвращает
+   её на прежний уровень: зазор между кругом и клавиатурой уменьшается
+   ровно на 5% высоты экрана. Если поменяешь -15vh в CSS — поменяй и
+   тут (разница между старым 20% и новым значением). */
+const MOBILE_PIANO_UP_VH = 0.05;
 const MOBILE_PIANO_REF_BLOCKS = 2;   // эталон масштаба — клавиатура в 2 октавы
 
 function mobilePianoRefWidth(){
@@ -4754,8 +4762,11 @@ function layoutMobilePiano(wrapEl, svgEl){
   const scale = Math.min(baseScale, availW / vbW);
   svgEl.style.width = (vbW * scale) + 'px';
   svgEl.style.height = (vbH * scale) + 'px';
-  // компенсация «усохшей» зоны стрелок — держит верхний край клавиш на месте
-  wrapEl.style.marginTop = (MOBILE_PIANO_GAP + TRAIN_PIANO_ARROW_ZONE_H * (baseScale - scale)) + 'px';
+  // компенсация «усохшей» зоны стрелок — держит верхний край клавиш на
+  // месте; минус MOBILE_PIANO_UP_VH — подтягивание клавиатуры вверх вслед
+  // за опущенным кругом (см. комментарий у константы)
+  const up = window.innerHeight * MOBILE_PIANO_UP_VH;
+  wrapEl.style.marginTop = (MOBILE_PIANO_GAP + TRAIN_PIANO_ARROW_ZONE_H * (baseScale - scale) - up) + 'px';
 }
 
 // Пересчёт для обеих клавиатур сразу (поворот экрана, смена desktop/mobile).
