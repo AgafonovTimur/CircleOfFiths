@@ -1095,10 +1095,12 @@
      "Показывать клавиатуру" — чтобы под ним освободилось место для
      клавиатуры. Класс mobile-piano-on вешается на <body> из JS
      (updateMobilePianoLayout). Двигаем именно #circleInner —
-     клавиатура лежит внутри него и едет вместе с кругом. */
+     клавиатура лежит внутри него и едет вместе с кругом.
+     Подъём правится одним числом ниже: 15vh = 15% высоты экрана.
+     Без галки круг остаётся точно по центру, как и был. */
   body.is-mobile.mobile-piano-on #circleInner,
   body.is-mobile.mobile-piano-on #trainCircleInner{
-    transform:translateY(-20vh);
+    transform:translateY(-15vh);
     transition:transform 0.2s ease;
   }
   /* Кнопки обращений под клавиатурой: на телефоне ряд из 4 кнопок
