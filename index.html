@@ -10183,6 +10183,7 @@ document.addEventListener('touchend', (e) => {
 const MF_TAP_MOVE_THRESHOLD = 30;   // px, максимальный сдвиг ОДНОГО пальца, чтобы это ещё считался тапом
 const MF_TAP_MAX_DURATION = 800;    // ms, максимальная длительность тапа (пальцы редко приземляются/уходят идеально синхронно)
 const MF_PINCH_THRESHOLD = 20;      // px, изменение расстояния между пальцами, после которого жест считается pinch-to-zoom, а не тапом
+const MF_SCALE_THRESHOLD = 0.05;    // доля (5%), изменение масштаба страницы за время жеста, после которого жест считается зумом, а не тапом
 /* Смещение считается ДЛЯ КАЖДОГО ПАЛЬЦА ОТДЕЛЬНО (по его touch.identifier),
    а не по общему центру касаний. Раньше отслеживался именно центр — и
    из-за этого 3 и 4 пальца не работали: пальцы физически не касаются
@@ -10192,7 +10193,14 @@ const MF_PINCH_THRESHOLD = 20;      // px, изменение расстояни
    "сдвинутый" (moved=true) и отбрасывался. Два пальца при этом работали,
    потому что после них центр больше не смещался — ровно то поведение,
    которое и наблюдалось. */
-let mfTapState = { active:false, maxTouches:0, startTime:0, moved:false, starts:new Map(), last:new Map() };
+let mfTapState = { active:false, maxTouches:0, startTime:0, moved:false, startScale:1, starts:new Map(), last:new Map() };
+
+/* Текущий масштаб страницы (pinch-to-zoom браузера). Сравнивается начало
+   жеста с концом, а НЕ с 100%: если страница уже была увеличена и во время
+   тапа масштаб не менялся — тап засчитывается как обычно. */
+function mfCurrentScale(){
+  return (window.visualViewport && window.visualViewport.scale) || 1;
+}
 
 function mfTrackStarts(touchList){
   for(let i = 0; i < touchList.length; i++){
@@ -10255,6 +10263,7 @@ document.addEventListener('touchstart', (e) => {
       mfTapState.active = true;
       mfTapState.startTime = Date.now();
       mfTapState.moved = false;
+      mfTapState.startScale = mfCurrentScale();
       mfTapState.starts.clear();
     }
     // запоминаем стартовую точку каждого нового пальца — в том числе
@@ -10276,6 +10285,10 @@ document.addEventListener('touchend', (e) => {
   // даже если touchmove браузер «съел» под свой pinch-to-zoom
   mfCheckMoved(e.changedTouches);
   if(e.touches.length > 0) return; // ждём, пока поднимутся все пальцы
+  // масштаб страницы изменился за время жеста — это pinch-to-zoom, не тап
+  if(Math.abs(mfCurrentScale() - mfTapState.startScale) > MF_SCALE_THRESHOLD){
+    mfTapState.moved = true;
+  }
   const duration = Date.now() - mfTapState.startTime;
   const count = mfTapState.maxTouches;
   const wasMoved = mfTapState.moved;
@@ -10303,6 +10316,21 @@ document.addEventListener('touchcancel', () => {
 ['gesturestart','gesturechange','gestureend'].forEach(evt => {
   document.addEventListener(evt, () => { mfTapState.moved = true; }, { passive: true });
 });
+
+/* Android/Chrome собственных gesture-событий не присылает, а масштаб может
+   «доехать» уже после отрыва пальцев. Поэтому дополнительно слушаем
+   изменение visual viewport: если во время жеста масштаб ушёл больше чем
+   на MF_SCALE_THRESHOLD от стартового — это точно зум. */
+if(window.visualViewport){
+  const mfViewportCheck = () => {
+    if(!mfTapState.active) return;
+    if(Math.abs(mfCurrentScale() - mfTapState.startScale) > MF_SCALE_THRESHOLD){
+      mfTapState.moved = true;
+    }
+  };
+  window.visualViewport.addEventListener('resize', mfViewportCheck, { passive: true });
+  window.visualViewport.addEventListener('scroll', mfViewportCheck, { passive: true });
+}
 
 /* =========================================================
    Масштабирование круга: клавиши +/-, Shift+"-" сброс до 100%
