@@ -1899,6 +1899,48 @@
     padding:6px;
     gap:0;
   }
+
+  /* =====================================================================
+     ЕДИНЫЙ ВИД НАСТРОЕК — «Квинтовый круг» остаётся эталоном.
+     Размеры кнопок, шрифты и отступы здесь ИСХОДНЫЕ; изменена только
+     заливка отмеченного чекбокса (серая, как в двух других приложениях).
+     ===================================================================== */
+  #sidePanel input[type="checkbox"]:checked{
+    background:#5a5a5a;
+    border-color:#5a5a5a;
+  }
+  body.theme-light #sidePanel input[type="checkbox"]:checked{
+    background:#2f2f2f;
+    border-color:#2f2f2f;
+  }
+
+  /* ---- Расстояние между кнопками ПО ШИРИНЕ уменьшено вдвое.
+         Не трогаем зазор между карточками «Вариант 1» и «Вариант 2» —
+         там это смысловое разделение двух групп. ---- */
+  #sidePanel #topTabBar,
+  #sidePanel #ringSelect,
+  #sidePanel #selectButtons,
+  #sidePanel #notesInputButtons,
+  #sidePanel .noteNamingSwitchRow,
+  #sidePanel .dawOutBtnRow{
+    gap:4px;
+  }
+  #sidePanel #selectButtons2,
+  #sidePanel #selectButtons3{
+    gap:5px;
+  }
+  #sidePanel #level2TypeButtons,
+  #sidePanel #trainChordGroups,
+  #sidePanel .chordGridCard{
+    column-gap:4px;
+  }
+  #sidePanel .ringBtnRow,
+  #sidePanel .variantGroupRow{
+    gap:3px;
+  }
+  #sidePanel .chordGridCard .ringBtnRow{
+    gap:2px;
+  }
 </style>
 </head>
 <body>
