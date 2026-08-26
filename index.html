@@ -604,12 +604,16 @@
      всех вкладок (Ноты, Аккорды/Лады, Обучение). Хранится в localStorage
      одним ключом (см. JS, SIDE_PANEL_PIN_KEY), поэтому выбранное
      расположение одинаково на всех вкладках и переживает перезагрузку. */
+  /* Надпись и 3 галки идут В ДВЕ СТРОКИ, как у галки "Чёрточки" и её
+     подпунктов "Под кругом"/"Над кругом": сверху надпись, снизу галки
+     со сдвигом вправо на 24px. */
   #sidePanelPinRow{
     display:flex;
-    align-items:center;
+    flex-direction:column;
+    align-items:flex-start;
     align-self:flex-start;
-    flex-wrap:wrap;
-    gap:6px 12px;
+    flex-wrap:nowrap;
+    gap:6px;
     width:100%;
     font-size:16px;
     color:var(--app-text-color);
@@ -664,17 +668,16 @@
   .crosshairRow.disabledPlace .crosshairPlaceOptions{
     opacity:0.45;
   }
-  /* Группа из 3 галок (Слева/По центру/Справа). Если надпись и галки не
-     помещаются в одну строку — flex-wrap переносит .sidePanelPinOptions
-     на новую строку под надписью; тогда добавляем такой же отступ
-     слева (24px), как у подпункта "Привязать тональность" под
-     "Показывать ступени аккорда" (#trainLockKeyRow). */
+  /* Группа из 3 галок (Слева/По центру/Справа) — всегда строкой ниже
+     надписи и со сдвигом вправо на 24px, как подпункты "Под кругом"/
+     "Над кругом" под галкой "Чёрточки" (.crosshairPlaceOptions). */
   .sidePanelPinOptions{
     display:flex;
     align-items:center;
     flex-wrap:wrap;
     gap:6px 14px;
     flex:0 0 auto;
+    margin-left:24px;
   }
   #sidePanelPinRow.wrapped .sidePanelPinOptions{
     margin-left:24px;
