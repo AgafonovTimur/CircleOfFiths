@@ -622,15 +622,16 @@
   /* ===== Строки "Чёрточки" (прицел по центру круга) =====
      У вкладок "Ноты" и "Аккорды/Лады" свои независимые настройки
      (#crosshairRowP1 / #crosshairRowP3); на "Обучении" обе скрыты.
-     В строке: галка "Чёрточки" + 2 галки "Под кругом"/"Над кругом".
+     В строке: галка "Чёрточки", а строкой ниже со сдвигом вправо —
+     2 галки "Под кругом"/"Над кругом".
      Нужная строка переносится по DOM сразу под строку "Отображать
      настройки:" — см. updateCrosshairRowPosition() в скрипте ниже. */
   .crosshairRow{
     display:flex;
-    align-items:center;
+    flex-direction:column;
+    align-items:flex-start;
     align-self:flex-start;
-    flex-wrap:wrap;
-    gap:6px 12px;
+    gap:6px;
     width:100%;
     font-size:16px;
     color:var(--app-text-color);
@@ -645,12 +646,15 @@
     flex:0 0 auto;
     cursor:pointer;
   }
+  /* "Под кругом"/"Над кругом" — подпункты галки "Чёрточки", поэтому
+     идут строкой ниже и сдвинуты вправо на 24px, как "Скрыть ячейки
+     круга" под "Показывать клавиатуру" (#level3HideWedgesRow). */
   .crosshairPlaceOptions{
     display:flex;
     align-items:center;
     flex-wrap:wrap;
     gap:6px 14px;
-    flex:0 0 auto;
+    margin-left:24px;
   }
   .crosshairRow input[type="checkbox"]{
     flex:0 0 auto;
